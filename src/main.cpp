@@ -18,6 +18,10 @@ int main() {
 
   const string path = "./images/input/";
 
+  if (!exists(path)) {
+    create_directories(path);
+  }
+
   for (const auto &file : fs::directory_iterator(path)) {
     if (fs::is_regular_file(file)) {
 
