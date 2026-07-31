@@ -30,6 +30,9 @@
     <None Include="README.md">
       <Filter>docs</Filter>
     </None>
+    <None Include="docs\API Specifications.md">
+      <Filter>docs</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\AppData.h">
@@ -39,6 +42,18 @@
       <Filter>include</Filter>
     </ClInclude>
     <ClInclude Include="include\AppImageJpeg.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\AppStruct.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\AppDataType.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\AppDefine.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\AppFuncType.h">
       <Filter>include</Filter>
     </ClInclude>
   </ItemGroup>

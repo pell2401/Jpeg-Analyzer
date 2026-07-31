@@ -1,46 +1,13 @@
-# Base style
-BasedOnStyle: Microsoft
-
-#################################
-# Indentation Style
-#################################
+BasedOnStyle: LLVM
 IndentWidth: 2
-TabWidth: 2
-# UseTab: Always
 UseTab: Never
-
-#################################
-# Include Style
-#################################
+BreakBeforeBraces: Stroustrup
+IndentCaseLabels: true
+SpaceBeforeParens: ControlStatements
+AllowShortIfStatementsOnASingleLine: false
+AllowShortBlocksOnASingleLine: false
+AllowShortCaseLabelsOnASingleLine: false
+AllowShortFunctionsOnASingleLine: None
+MaxEmptyLinesToKeep: 1
+KeepEmptyLinesAtTheStartOfBlocks: true
 SortIncludes: Never
-
-#################################
-# Column Length
-#################################
-ColumnLimit: 80
-# ColumnLimit: 0
-
-# Cpp11BracedListStyle: false
-
-#################################
-# Brace Style
-#################################
-# K & R
-BreakBeforeBraces: Attach
-# Funtion
-# BreakBeforeBraces: Linux
-# Function / Class / Namespace
-# BreakBeforeBraces: Mozilla
-# else / catch
-# BreakBeforeBraces: Stroustrup
-# All
-# BreakBeforeBraces: Allman
-# Indent
-# BreakBeforeBraces: Whitesmiths
-#
-# BreakBeforeBraces: GNU
-#
-# BreakBeforeBraces: WebKit
-#
-# BreakBeforeBraces: Custom
-

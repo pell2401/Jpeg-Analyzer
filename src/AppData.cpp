@@ -2,13 +2,16 @@
 
 CAppData *CAppData::m_pObject = nullptr;
 
-CAppData::CAppData() {
+CAppData::CAppData()
+{
 }
 
-CAppData::~CAppData() {
+CAppData::~CAppData()
+{
 }
 
-CAppData *CAppData::GetInstance() {
+CAppData *CAppData::GetInstance()
+{
   if (m_pObject == nullptr) {
     m_pObject = new CAppData();
   }

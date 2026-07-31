@@ -137,12 +137,17 @@
   <ItemGroup>
     <None Include=".gitattributes" />
     <None Include=".gitignore" />
+    <None Include="docs\API Specifications.md" />
     <None Include="README.md" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\AppData.h" />
+    <ClInclude Include="include\AppDataType.h" />
+    <ClInclude Include="include\AppDefine.h" />
+    <ClInclude Include="include\AppFuncType.h" />
     <ClInclude Include="include\AppImage.h" />
     <ClInclude Include="include\AppImageJpeg.h" />
+    <ClInclude Include="include\AppStruct.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\AppData.cpp" />

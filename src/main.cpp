@@ -1,9 +1,9 @@
 #include <iostream>
+#include <vector>
+#include <string>
 #include <iomanip>
 #include <filesystem>
 #include <fstream>
-#include <string>
-#include <vector>
 
 #include "AppImageJpeg.h"
 
@@ -11,7 +11,8 @@ namespace fs = std::filesystem;
 using namespace std;
 using namespace fs;
 
-int main() {
+int main()
+{
   CAppImageJpeg image;
 
   vector<string> file_list;
@@ -35,10 +36,16 @@ int main() {
     }
   }
 
+  uint64_t filesize = 0x00;
+
   for (const auto &file : file_list) {
     image.ReadFile(file);
     image.ParseMarker();
+    filesize += image.GetFileSize();
   }
+
+  cout << "Total filesize: " << hex << filesize / 1024.0 / 1024.0 << "[MB]"
+       << endl;
 
   return (0);
 }
