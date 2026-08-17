@@ -12,8 +12,6 @@
 #include "AppFuncType.h"
 #include "AppDefine.h"
 
-using namespace std;
-
 class CAppImageJpeg : public CAppImage {
 public:
   CAppImageJpeg();
@@ -35,6 +33,9 @@ public:
   int ParseMarkerSegment(uint8_t markerCode, uint64_t &pos);
   int ObtainImageData(uint64_t &pos);
 
+protected:
+  int ClearMemoryEx() override;
+
 private:
   int IncrPtrToMarker(byte *pData);
 
@@ -44,6 +45,10 @@ private:
   int ParseAPPn(const uint8_t *pData, const uint16_t nLength);
 
   int ParseDHT(const uint8_t *pData, const uint16_t nLength);
+  int ValidateTcTh(const uint8_t tc, const uint8_t th) const;
+  int MakeHuffmanTree(const uint8_t tc, const uint8_t th, const uint8_t l[16],
+                      const vector<uint8_t> &v);
+  int PrintHuffmanTree(const uint8_t tc, const uint8_t th) const;
   int ParseSOF0(const uint8_t *pData, const uint16_t nLength);
   int ParseSOF2(const uint8_t *pData, const uint16_t nLength);
   int ParseSOF3(const uint8_t *pData, const uint16_t nLength);
@@ -59,14 +64,22 @@ private:
       {SOI, &CAppImageJpeg::ParseSOI},
       {EOI, &CAppImageJpeg::ParseEOI},
 
-      //{APP0, &CAppImageJpeg::ParseAPPn},  {APP1, &CAppImageJpeg::ParseAPPn},
-      //{APP2, &CAppImageJpeg::ParseAPPn},  {APP3, &CAppImageJpeg::ParseAPPn},
-      //{APP4, &CAppImageJpeg::ParseAPPn},  {APP5, &CAppImageJpeg::ParseAPPn},
-      //{APP6, &CAppImageJpeg::ParseAPPn},  {APP7, &CAppImageJpeg::ParseAPPn},
-      //{APP8, &CAppImageJpeg::ParseAPPn},  {APP9, &CAppImageJpeg::ParseAPPn},
-      //{APP10, &CAppImageJpeg::ParseAPPn}, {APP11, &CAppImageJpeg::ParseAPPn},
-      //{APP12, &CAppImageJpeg::ParseAPPn}, {APP13, &CAppImageJpeg::ParseAPPn},
-      //{APP14, &CAppImageJpeg::ParseAPPn}, {APP15, &CAppImageJpeg::ParseAPPn},
+      {APP0, &CAppImageJpeg::ParseAPPn},
+      {APP1, &CAppImageJpeg::ParseAPPn},
+      {APP2, &CAppImageJpeg::ParseAPPn},
+      {APP3, &CAppImageJpeg::ParseAPPn},
+      {APP4, &CAppImageJpeg::ParseAPPn},
+      {APP5, &CAppImageJpeg::ParseAPPn},
+      {APP6, &CAppImageJpeg::ParseAPPn},
+      {APP7, &CAppImageJpeg::ParseAPPn},
+      {APP8, &CAppImageJpeg::ParseAPPn},
+      {APP9, &CAppImageJpeg::ParseAPPn},
+      {APP10, &CAppImageJpeg::ParseAPPn},
+      {APP11, &CAppImageJpeg::ParseAPPn},
+      {APP12, &CAppImageJpeg::ParseAPPn},
+      {APP13, &CAppImageJpeg::ParseAPPn},
+      {APP14, &CAppImageJpeg::ParseAPPn},
+      {APP15, &CAppImageJpeg::ParseAPPn},
 
       //{RST0, &CAppImageJpeg::ParseRSTn},  {RST1, &CAppImageJpeg::ParseRSTn},
       //{RST2, &CAppImageJpeg::ParseRSTn},  {RST3, &CAppImageJpeg::ParseRSTn},
@@ -86,10 +99,10 @@ private:
   };
 
 private:
-  vector<uint8_t> m_vt_BitData;
+  std::vector<uint8_t> m_vt_BitData;
 
 private:
-  map<uint8_t, string> m_MarkerMap = {
+  std::map<uint8_t, string> m_MarkerMap = {
       {0xC0, "SOF0"},  {0xC2, "SOF2"},  {0xC3, "SOF3"},  {0xC4, "DHT"},
 
       {0xD0, "RST0"},  {0xD1, "RST1"},  {0xD2, "RST2"},  {0xD3, "RST3"},
@@ -104,6 +117,6 @@ private:
       {0xEC, "APP12"}, {0xED, "APP13"}, {0xEE, "APP14"}, {0xEF, "APP15"}};
 
 private:
-  vt_dht m_vt_dht;
-  vt_dqt m_vt_dqt;
+  vt_DHT m_vt_dht;
+  _SOF m_sof;
 };

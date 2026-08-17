@@ -7,16 +7,16 @@
 
 CAppImage::CAppImage()
 {
-  ClearMemory();
 }
 
 CAppImage::~CAppImage()
 {
-  ClearMemory();
 }
 
 int CAppImage::ClearMemory()
 {
+  ClearMemoryEx();
+
   m_pData.reset();
   SetFileSize(0x00);
   SetFileName("");

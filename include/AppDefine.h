@@ -5,6 +5,8 @@
 #define BYTE_MARKER_PREFIX 0xFF
 #define BYTE_STUFFING 0x00
 #define SUPPORTED_MARKER_NUMBER 40
+#define MAX_DHT_TC_COUNT 2
+#define MAX_DHT_TH_COUNT 4
 
 #pragma endregion
 

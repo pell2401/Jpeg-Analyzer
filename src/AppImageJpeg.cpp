@@ -1,8 +1,11 @@
 #include <iostream>
 #include <iomanip>
+#include <format>
 
 #include "AppImageJpeg.h"
 #include "AppDefine.h"
+
+using namespace std;
 
 CAppImageJpeg::CAppImageJpeg() : CAppImage()
 {
@@ -99,6 +102,8 @@ int CAppImageJpeg::MoveParsePosToScanEnd(uint64_t &pos) const
   bool bFirstRst = true;
   uint8_t nExepectRst = RST0;
 
+  const uint64_t origin_pos = pos;
+
   while (!bError && !bFound) {
     if (!IsParsePosValid(pos)) {
       // TODO check if this is a valid logic
@@ -156,9 +161,12 @@ int CAppImageJpeg::MoveParsePosToScanEnd(uint64_t &pos) const
       }
     }
     else {
+      cout << std::vformat("{:08b}", std::make_format_args(m_pData[pos]));
       pos++;
     }
   }
+  cout << endl << endl;
+  cout << "count: " << (int)(pos - origin_pos) << " [byte]" << endl;
 
   int nRet = RET_OK;
 
@@ -252,7 +260,9 @@ int CAppImageJpeg::PrintMarkerPos(uint8_t markerCode, uint64_t pos) const
 
   cout << "Found marker: 0xFF" << hex << uppercase
        << static_cast<int>(markerCode) << " (" << markerName
-       << ") at position 0x" << hex << pos;
+       << ") at position 0x" << hex << uppercase << pos;
+
+  cout << dec << setw(0) << setfill(' ');
 
   return (0);
 }
@@ -334,6 +344,20 @@ int CAppImageJpeg::ObtainImageData(uint64_t &pos)
   return (RET_OK);
 }
 
+int CAppImageJpeg::ClearMemoryEx()
+{
+  m_vt_BitData.clear();
+  m_sof.clear();
+
+  for (int tc = 0; tc < MAX_DHT_TC_COUNT; tc++) {
+    for (int th = 0; th < MAX_DHT_TH_COUNT; th++) {
+      m_vt_dht[tc][th].clear();
+    }
+  }
+
+  return (RET_OK);
+}
+
 int CAppImageJpeg::IncrPtrToMarker(byte *pData)
 {
   return (RET_OK);
@@ -351,6 +375,21 @@ int CAppImageJpeg::ParseEOI(const uint8_t *pData, const uint16_t nLength)
 
 int CAppImageJpeg::ParseAPPn(const uint8_t *pData, const uint16_t nLength)
 {
+  for (uint16_t nPos = 0; nPos < nLength; nPos++) {
+    cout << hex << uppercase << setw(2) << setfill('0') << (int)pData[nPos]
+         << " ";
+
+    if (nPos % 16 == 15) {
+      cout << endl;
+    }
+  }
+
+  if (nLength % 16 != 0) {
+    cout << endl;
+  }
+
+  cout << dec << nouppercase << setw(0) << setfill(' ');
+
   return (RET_OK);
 }
 
@@ -363,11 +402,13 @@ int CAppImageJpeg::ParseDHT(const uint8_t *pData, const uint16_t nLength)
   dht_segment.seg.length = *(pData + pos) << 8 | *(pData + pos + 1);
   MoveParseMarkerOffset(pos);
 
+  cout << "========DHT=========" << endl;
+
   while (pos < nLength) {
     _DHT dht;
 
-    dht.tc = *(pData + pos) & 0xF0;
-    dht.th = *(pData + pos) & 0x0F;
+    dht.tc = *(pData + pos) >> 4;
+    dht.th = (*(pData + pos) & 0x0F);
     pos++;
 
     for (int i = 0; (i < 16 && pos < nLength); i++) {
@@ -381,13 +422,108 @@ int CAppImageJpeg::ParseDHT(const uint8_t *pData, const uint16_t nLength)
     dht.v.clear();
 
     for (int i = 0; (i < 16 && pos < nLength); i++) {
-      vector<uint8_t> vt_v;
       for (int j = 0; (j < dht.l[i] && pos < nLength); j++) {
-        vt_v.push_back(*(pData + pos));
+        dht.v.push_back(*(pData + pos));
         pos++;
       }
-      dht.v.push_back(vt_v);
     }
+
+    MakeHuffmanTree(dht.tc, dht.th, dht.l, dht.v);
+    PrintHuffmanTree(dht.tc, dht.th);
+    dht_segment.dht.push_back(dht);
+  }
+
+  cout << "====================" << endl;
+
+  return (RET_OK);
+}
+
+int CAppImageJpeg::ValidateTcTh(const uint8_t tc, const uint8_t th) const
+{
+  if (tc != 0 && tc != 1) {
+    return (RET_ERR);
+  }
+
+  if (th != 0 && th != 1 && th != 2 && th != 3) {
+    return (RET_ERR);
+  }
+
+  return (RET_OK);
+}
+
+int CAppImageJpeg::MakeHuffmanTree(const uint8_t tc, const uint8_t th,
+                                   const uint8_t l[16],
+                                   const vector<uint8_t> &v)
+{
+  _HUFFMAN_TABLE table;
+  uint16_t code = 0x0000;
+  uint16_t pos = 0x0000;
+
+  if (ValidateTcTh(tc, th) == RET_ERR) {
+    return (RET_ERR);
+  }
+
+  vector<_HUFFMAN_TABLE> *pTable = &m_vt_dht[tc][th];
+
+  for (int i = 0; i < 16; i++) {
+    for (int j = 0; j < l[i]; j++) {
+      table.length = i + 1;
+      table.code = code++;
+      table.value = v[pos++];
+      pTable->push_back(table);
+    }
+    code <<= 1;
+  }
+
+  return (RET_OK);
+}
+
+int CAppImageJpeg::PrintHuffmanTree(const uint8_t tc, const uint8_t th) const
+{
+  if (ValidateTcTh(tc, th) == RET_ERR) {
+    return (RET_ERR);
+  }
+
+  const vector<_HUFFMAN_TABLE> *pTable = &m_vt_dht[tc][th];
+
+  cout << "table class: " << (int)tc << ", ";
+  cout << "table identifier: " << (int)th << endl;
+
+  if (tc == 0) {
+    cout << "value (decimal) : code (binary)" << endl;
+  }
+  else if (tc == 1) {
+    cout << "value (RRRR/SSSS) : code (binary)" << endl;
+  }
+
+  for (int i = 0; i < pTable->size(); i++) {
+    _HUFFMAN_TABLE table = pTable->at(i);
+
+    char format[64] = {0x00};
+    snprintf(format, 64, "{:0%db}", table.length);
+
+    if (tc == 0) {
+      // DC
+      cout << (int)table.value;
+    }
+    else if (tc == 1) {
+      // AC
+      uint8_t run = (table.value) >> 4;
+      uint8_t size = table.value & 0x0F;
+      if (table.value == 0x00) {
+        cout << "EOB (End Of Block)";
+      }
+      else if (table.value == 0xF0) {
+        cout << "ZRL (Zero RunLength)";
+      }
+      else {
+        cout << (int)run << "/" << (int)size;
+      }
+    }
+
+    cout << " : ";
+    cout << std::vformat(format, std::make_format_args(table.code));
+    cout << endl;
   }
 
   return (RET_OK);
@@ -395,6 +531,54 @@ int CAppImageJpeg::ParseDHT(const uint8_t *pData, const uint16_t nLength)
 
 int CAppImageJpeg::ParseSOF0(const uint8_t *pData, const uint16_t nLength)
 {
+  if (nLength < 8) {
+    return (RET_ERR);
+  }
+
+  m_sof.seg.length = (pData[0] << 8) | pData[1];
+  m_sof.sample_rate = pData[2];
+  m_sof.width = (pData[3] << 8) | pData[4];
+  m_sof.height = (pData[5] << 8) | pData[6];
+  m_sof.num = pData[7];
+
+  if ((nLength - 8) % 3 != 0) {
+    return (RET_ERR);
+  }
+
+  for (int n = 0; n < m_sof.num; n++) {
+
+    _SOF_PART part;
+
+    part.index = pData[8 + 3 * n];
+    part.h_rate = pData[8 + 3 * n + 1] >> 4;
+    part.v_rate = pData[8 + 3 * n + 1] & 0x0F;
+    part.dqt_no = pData[8 + 3 * n + 2];
+
+    m_sof.vt_element.push_back(part);
+  }
+
+  cout << hex << uppercase << setw(0) << setfill('0');
+
+  cout << "========SOF0========" << endl;
+  cout << "sample rate: 0x" << (int)m_sof.sample_rate << endl;
+  cout << "width:  0x" << (int)m_sof.width << endl;
+  cout << "height: 0x" << (int)m_sof.height << endl;
+  cout << dec;
+  cout << "component num: " << (int)m_sof.num << endl;
+
+  for (int i = 0; i < m_sof.vt_element.size(); i++) {
+    const _SOF_PART *part = &m_sof.vt_element[i];
+    cout << "------------" << endl;
+    cout << "index: " << (int)part->index << endl;
+    cout << "hn: " << (int)part->h_rate << endl;
+    cout << "vn: " << (int)part->v_rate << endl;
+    cout << "DQT no: " << (int)part->dqt_no << endl;
+  }
+
+  cout << "====================" << endl;
+
+  cout << dec << nouppercase << setw(0) << setfill(' ');
+
   return (RET_OK);
 }
 

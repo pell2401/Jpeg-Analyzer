@@ -2,6 +2,15 @@
 
 The project provides the class `CAppImageJpeg`, whose declaration is written in `AppImageJpeg.h`.
 
+## 0. Scope
+
+The class `CAppImageJpeg` is only capable of decoding **baseline sequential** process.
+
+**Baseline sequential** process has the following features:
+
+- Source image: **8-bit** samples within each component
+- MAX DHT table: DC: 2, AC: 2
+
 ## 1. JPEG File Overview
 
 A JPEG file consists of **segments**. A **marker segment** is the minimum structural unit used in a JPEG file, consisting of a **marker**, a 2-byte length field, and parameters.

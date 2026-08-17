@@ -3,6 +3,6 @@
 #include <iostream>
 #include <cstdint>
 #include "AppStruct.h"
+#include "AppDefine.h"
 
-typedef std::vector<_DHT_SEGMENT> vt_dht;
-typedef std::vector<_DQT_SEGMENT> vt_dqt;
+typedef std::vector<_HUFFMAN_TABLE> vt_DHT[MAX_DHT_TC_COUNT][MAX_DHT_TH_COUNT];

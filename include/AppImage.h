@@ -26,6 +26,9 @@ public:
   const bool IsDataNull() const;
   const bool IsIndexValid(uint64_t pos) const;
 
+protected:
+  virtual int ClearMemoryEx() = 0;
+
 private:
   int ClearMemory();
   int SetFileSize(uint64_t fileSize);
