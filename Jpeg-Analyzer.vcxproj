@@ -147,12 +147,14 @@
     <ClInclude Include="include\AppFuncType.h" />
     <ClInclude Include="include\AppImage.h" />
     <ClInclude Include="include\AppImageJpeg.h" />
+    <ClInclude Include="include\AppIosFlagGuard.h" />
     <ClInclude Include="include\AppStruct.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\AppData.cpp" />
     <ClCompile Include="src\AppImage.cpp" />
     <ClCompile Include="src\AppImageJpeg.cpp" />
+    <ClCompile Include="src\AppIosFlagGuard.cpp" />
     <ClCompile Include="src\main.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

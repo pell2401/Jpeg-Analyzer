@@ -11,7 +11,7 @@ public:
   virtual ~CAppImage();
 
 public:
-  int ReadFile(const string &fileName);
+  int ReadFile(const string &filePath);
 
 public:
   int DumpFile() const;
@@ -25,6 +25,7 @@ public:
   const uint8_t GetData(uint64_t pos) const;
   const bool IsDataNull() const;
   const bool IsIndexValid(uint64_t pos) const;
+  const bool IsPrintable(uint8_t c) const;
 
 protected:
   virtual int ClearMemoryEx() = 0;

@@ -370,3 +370,13 @@ FodyWeavers.xsd
 
 result.txt
 *.bk
+
+# Report files written by the analyzer
+APPn.txt
+COM.txt
+DQT.txt
+SOFn.txt
+DHT.txt
+DRI.txt
+SOS.txt
+RAW.txt

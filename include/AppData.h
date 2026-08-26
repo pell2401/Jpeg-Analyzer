@@ -1,21 +1,34 @@
 #pragma once
 
-#include <iostream>
-#include <vector>
-
-#include "AppDataType.h"
 #include "AppDefine.h"
-#include "AppImageJpeg.h"
-#include "AppStruct.h"
+#include <string>
+#include <map>
 
-using namespace std;
+using IniData = std::map<std::string, std::map<std::string, std::string>>;
 
 class CAppData {
 private:
   CAppData();
   virtual ~CAppData();
-  static CAppData *m_pObject;
+
+private:
+  static CAppData *GetInstance();
+  int ReadInifile(const std::string &path);
+  int WriteInifile(const std::string &path);
+
+private:
+  IniData m_IniData;
+
+private:
+  static bool IsEnable(const std::string &section, const std::string &key);
 
 public:
-  static CAppData *GetInstance();
+  static bool IsPrintAPP();
+  static bool IsPrintCOM();
+  static bool IsPrintDQT();
+  static bool IsPrintSOF();
+  static bool IsPrintDHT();
+  static bool IsPrintDRI();
+  static bool IsPrintSOS();
+  static bool IsPrintRAW();
 };
