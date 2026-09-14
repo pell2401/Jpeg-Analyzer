@@ -83,13 +83,13 @@ int CAppImageJpeg::ParseMarker()
     else {
     }
 
-    if (m_pData[pos] != 0xFF) {
+    if (m_pData[pos] != BYTE_MARKER_PREFIX) {
       cout << "Unexpected Format! Data Fragment Happened." << endl << endl;
       bError = true;
       break;
     }
 
-    while (IsParsePosValid(pos) && m_pData[pos] != 0xFF) {
+    while (IsParsePosValid(pos) && m_pData[pos] != BYTE_MARKER_PREFIX) {
       // Refer to API Specifications, section 1.5.1. Fill Byte.
       pos++;
     }
@@ -152,6 +152,8 @@ int CAppImageJpeg::MoveParsePosToScanEnd(uint64_t &pos)
 
   stringstream ss;
 
+  ss << GetFileName() << endl;
+
   while (!bError && !bFound) {
     if (!IsParsePosValid(pos)) {
       // TODO: Check if this is a valid logic
@@ -164,6 +166,9 @@ int CAppImageJpeg::MoveParsePosToScanEnd(uint64_t &pos)
       switch (m_pData[pos + 1]) {
 
         case BYTE_STUFFING: {
+          if (CAppData::IsPrintRAW()) {
+            ss << std::vformat("{:08b}", std::make_format_args(m_pData[pos]));
+          }
           MoveParseMarkerOffset(pos);
         } break;
 
@@ -220,8 +225,8 @@ int CAppImageJpeg::MoveParsePosToScanEnd(uint64_t &pos)
   }
 
   if (CAppData::IsPrintRAW()) {
-    ss << endl << endl;
-    ss << "count: " << (int)(pos - origin_pos) << " [byte]" << endl;
+    ss << endl << "" << (int)(pos - origin_pos) << " [bytes]" << endl;
+    ss << endl;
   }
 
   int nRet = RET_OK;
@@ -663,11 +668,11 @@ int CAppImageJpeg::PrintSOF()
 
   ss << GetFileName() << ", SOF0" << endl;
   ss << hex << uppercase << setfill('0');
-  ss << "sample rate: 0x" << (int)m_sof.sample_rate << endl;
-  ss << "width:  0x" << hex << (int)m_sof.width;
-  ss << " (" << dec << (int)m_sof.width << ") " << endl;
+  ss << "sample rate: 0x" << (int)m_sof.p << endl;
   ss << "height: 0x" << hex << (int)m_sof.height;
   ss << " (" << dec << (int)m_sof.height << ") " << endl;
+  ss << "width:  0x" << hex << (int)m_sof.width;
+  ss << " (" << dec << (int)m_sof.width << ") " << endl;
   ss << "component number: " << (int)m_sof.num << endl;
 
   for (int i = 0; i < m_sof.v.size(); i++) {
@@ -943,11 +948,11 @@ int CAppImageJpeg::ParseSOF0(const uint8_t *pData, const uint16_t nLength)
   if (nLength < 8) {
     return (RET_ERR);
   }
-
+  m_sof.seg.marker = SOF0;
   m_sof.seg.length = (pData[0] << 8) | pData[1];
-  m_sof.sample_rate = pData[2];
-  m_sof.width = (pData[3] << 8) | pData[4];
-  m_sof.height = (pData[5] << 8) | pData[6];
+  m_sof.p = pData[2];
+  m_sof.height = (pData[3] << 8) | pData[4];
+  m_sof.width = (pData[5] << 8) | pData[6];
   m_sof.num = pData[7];
 
   if ((nLength - 8) % 3 != 0) {

@@ -92,16 +92,16 @@ typedef struct tagStartOfFramePart {
 
 typedef struct tagStartOfFrame {
   _MARKER_SEGMENT seg;
-  uint8_t sample_rate;      // 8 (1 sample = {0,...,255} 2^8 = 256)
-  uint16_t height;          // image height [pixel]
-  uint16_t width;           // image width [pixel]
-  uint8_t num;              // the number of component
+  uint8_t p;       // precision when it's 8, 1 sample = {0,...,255} 2^8 = 256)
+  uint16_t height; // image height [pixel]
+  uint16_t width;  // image width [pixel]
+  uint8_t num;     // the number of component
   std::vector<_SOF_PART> v; // components
 
   void clear()
   {
     seg.clear();
-    sample_rate = 0x00;
+    p = 0x00;
     height = 0x0000;
     width = 0x0000;
     num = 0x00;

@@ -369,6 +369,7 @@ FodyWeavers.xsd
 /private/
 
 result.txt
+result_release.txt
 *.bk
 
 # Report files written by the analyzer

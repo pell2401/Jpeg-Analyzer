@@ -157,6 +157,18 @@ The marker `SOFn` is also required one number. However, the most used compressio
 
 The `SOF4`, `SOF8`, and `SOF12` do not exist since the value for these are reserved.
 
+##### 2.6.1.1 `SOF0`
+
+The following combination can be plausible.
+
+|Name|Y|Cb/Cr|MCU Size|MCU|
+|----|-|-----|---|-----------|
+|4:4:4|1:1|1:1|8 x 8|Y(1) + Cb(1) + Cr(1)|
+|4:2:2|2:1|1:1|16 x 8|Y(2) + Cb(1) + Cr(1)|
+|4:2:0|2:2|1:1|16 x 16|Y(4) + Cb(1) + Cr(1)|
+|4:1:1|4:1|1:1|32 x 8|Y(4) + Cb(1) + Cr(1)|
+|4:4:0|1:2|1:1|8 x 16|Y(2) + Cb(1) + Cr(1)|
+
 #### 2.6.2 `DRI` (Define Restart Interval)
 
 The marker `DRI` defines in which interval of MCUs the `RSTn` markers appear during compressed scan data.
