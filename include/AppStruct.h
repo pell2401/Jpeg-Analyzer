@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <cstring>
 #include <vector>
 #include "AppFuncType.h"
 
@@ -151,6 +152,21 @@ typedef struct tagStartOfScan {
     al = 0x00;
   }
 } _SOS;
+
+typedef struct tagDefineRestartInterval {
+  //  The number of MCU in the restart interval.
+  uint16_t ri; // Return Interval.
+
+  tagDefineRestartInterval()
+  {
+    clear();
+  }
+
+  void clear()
+  {
+    ri = 0x0000;
+  }
+} _DRI;
 
 typedef struct tagMarkerHandler {
   uint8_t marker;

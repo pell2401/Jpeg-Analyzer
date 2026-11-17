@@ -1,12 +1,17 @@
 # JPEG Analyzer
 
-This project analyzes arbitrary JPEG files.
+This project analyzes JPEG files.
+
+## Scope
+
+- [ ] Baseline (`SOF0`)
+- [ ] Progressive (`SOF2`)
 
 ## Features
 
 - [x] Reads JPEG files and shows all markers used in the file.
-- [ ] Analyzes and visualizes huffman and quantization tables.
-- [ ] Converts arbitrary JPEG files to Bitmap files.
+- [x] Analyzes and visualizes Huffman and quantization tables.
+- [ ] Converts supported JPEG files into Bitmap files.
 
 ## JPEG Markers
 
@@ -20,17 +25,26 @@ This project analyzes arbitrary JPEG files.
 
 ## Build
 
-### Requirements
+TODO: Cross Platform
 
-- Visual Studio 2022 (or later)
-- Windows 11
+- Visual Studio (Windows)
+- Linux (Debian)
+- Mac
 
-### How To Build
+### On Windows
 
 1. Clone the repository:  `git clone https://github.com/pell2401/Jpeg-Analyzer.git`.
 2. Open `Jpeg-Analyzer.sln` in Visual Studio.
 3. Select the `x64` configuration.
 4. Build the solution, or press `F5` to build and run the project.
+
+### On Linux
+
+TODO:
+
+### On Mac OS
+
+TODO:
 
 ## Directory Structure
 
@@ -51,28 +65,14 @@ This project analyzes arbitrary JPEG files.
     └── main.cpp
 ```
 
-### Project Files
+### Project Files for Visual Studio (Windows)
 
-#### `Jpeg-Analyzer.sln`
-
-This file specifies how this project was created.
-
-```txt
-VisualStudioVersion = 17.13.35931.197 d17.13
-MinimumVisualStudioVersion = 10.0.40219.1
-```
-
-#### `Jpeg-Analyzer.vcxproj`
-
-This file is in XML and specifies the project configuration, source files, and build settings.
-
-#### `Jpeg-Analyzer.vcxproj.filters`
-
-This file is in XML format and manages the Solution Explorer.
-
-#### `Jpeg-Analyzer.vxcproj.user`
-
-This file is in XML format and stores user-specific debugging and build settings. This file is not tracked by Git and not necessary for building.
+|File|Description|
+|----|-----------|
+|`Jpeg-Analyzer.sln`|Solution File|
+|`Jpeg-Analyzer.vcxproj`|Visual C Project|
+|`Jpeg-Analyzer.vcxproj.filters`|Visual C Project Filters / **Solution Explorer**|
+|`Jpeg-Analyzer.vcxproj.user`|User-specific debugging and build settings|
 
 ### Document Files
 
@@ -87,8 +87,6 @@ This file is written in Markdown and is exactly what you're reading now.
 The header file contains the declaration of all structure types used in the program.
 The header file also defines the class **`CAppData`**, which has necessary objects that can be accessed through its static pointer to the class instance.
 
-The **`CAppData`** class is not fully utilized yet.
-
 #### `AppImage.h` and `AppImage.cpp`
 
 These files contain the declarations and definitions of the class **`CAppImage`**, which provides instance methods such as **`ReadFile`**.
@@ -100,3 +98,4 @@ These files contain the declarations and definitions of the class **`CAppImageJp
 ## References
 
 - [Exploring JPEG](https://www.imperialviolet.org/binary/jpeg/)
+- [API Specifications.md](./docs/API%20Specifications.md)

@@ -1,0 +1,24 @@
+graph TD
+ParseMarker --> ParseMarkerSegment
+ParseMarkerSegment --> ParseAPP
+ParseMarkerSegment --> ParseDQT
+ParseMarkerSegment --> ParseSOF0
+ParseMarkerSegment --> ParseDHT
+ParseMarkerSegment --> ParseSOS
+
+ParseDQT --> PrintQuantizationTable
+PrintQuantizationTable --> WriteFileDQT
+
+ParseAPP --> PrintAPP
+PrintAPP --> WriteFileAPP
+PrintAPP --> PrintAPPFormatHex
+
+ParseSOF0 --> PrintSOF
+PrintSOF --> WriteFileSOF
+
+ParseDHT --> MakeHuffmanTree
+ParseDHT --> PrintHuffmanTable
+ParseDHT --> WriteFileDHT
+
+ParseSOS --> PrintSOS
+PrintSOS --> WriteFileSOS

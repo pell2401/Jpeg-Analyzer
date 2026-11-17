@@ -5,7 +5,7 @@
 #define BYTE_STUFFING 0x00
 #define MCU_COUNT 0x08
 #define DUMP_MAX_LINE_LENGTH 32
-#define SUPPORTED_MARKER_NUMBER 40
+#define SUPPORTED_MARKER_SEGMENT_NUMBER 24
 #define APP_FILENAME "APPn.txt"
 #define COM_FILENAME "COM.txt"
 #define DQT_FILENAME "DQT.txt"
@@ -15,6 +15,13 @@
 #define SOS_FILENAME "SOS.txt"
 #define RAW_FILENAME "RAW.txt"
 #define INIFILE_NAME "Setting.ini"
+#pragma endregion
+
+#pragma region Settings in AppData
+#define PRINT_APP_FORMAT_HEX 0x01
+#define PRINT_APP_FORMAT_ASCII 0x02
+#define PRINT_APP_FORMAT_BOTH 0x04
+#define PRINT_APP_FORMAT_HEXDUMP 0x08
 #pragma endregion
 
 #pragma region things in DHT

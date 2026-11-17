@@ -133,6 +133,39 @@ bool CAppData::IsEnable(const std::string &section, const std::string &key)
 ///
 /// Return Values
 ///
+/// RET_ERR(-1)   : Read integer failed
+/// Others        : Read value
+///
+int CAppData::GetInt(const std::string &section, const std::string &key)
+{
+  int ret = -1;
+
+  // TODO: Modify: If value does not exist, empty data is automatically added
+  string str = GetInstance()->m_IniData[section][key];
+  int value = 0x00;
+
+  // No exceptions occur
+  auto [ptr, ec] = from_chars(str.data(), str.data() + str.size(), value);
+
+  if (ec == errc()) {
+    // Convert Success
+    ret = value;
+  }
+  else if (ec == errc::invalid_argument) {
+    // Not Numerical
+    ret = RET_ERR;
+  }
+  else if (ec == errc::result_out_of_range) {
+    // The value is greater than max of type of int
+    ret = RET_ERR;
+  }
+
+  return (ret);
+}
+
+///
+/// Return Values
+///
 /// true  : Output APPn file
 /// false : NOT Output APPn file
 ///
@@ -140,6 +173,28 @@ bool CAppData::IsPrintAPP()
 {
   bool bRet = IsEnable("MARKER_REPORT", "PRINT_APP");
   return (bRet);
+}
+
+///
+/// Return Values
+///
+/// RET_ERR(-1) : Not Defined
+/// 1           : Hexadecimal (PRINT_APP_FORMAT_HEX)
+/// 2           : ASCII (PRINT_APP_FORMAT_ASCII)
+/// 4           : Both (PRINT_APP_FORMAT_BOTH)
+/// 8           : Hexdump (PRINT_APP_FORMAT_HEXDUMP)
+///
+int CAppData::GetPrintAPPFormat()
+{
+  int nRet = GetInt("MARKER_REPORT", "PRINT_APP_FORMAT");
+
+  if (nRet == RET_ERR ||
+      (nRet != PRINT_APP_FORMAT_HEX && nRet != PRINT_APP_FORMAT_ASCII &&
+        nRet != PRINT_APP_FORMAT_BOTH && nRet != PRINT_APP_FORMAT_HEXDUMP)) {
+    nRet = RET_ERR;
+  }
+
+  return (nRet);
 }
 
 ///

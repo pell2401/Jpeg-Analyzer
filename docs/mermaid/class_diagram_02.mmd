@@ -1,0 +1,29 @@
+classDiagram
+
+class CAppData {
+  <<singleton>>
+  %% Fields
+  - m_IniData : IniData
+
+  %% Private Constructor && Destructor
+  - CAppData()
+  - ~CAppData()
+
+  %% Private Methods
+  - GetInstance()$ CAppData*
+  - ReadInifile(path: const string&) : int
+  - WriteInifile(path: const string&) : int
+  - IsEnable(section: const string&, key: const string&)$ : bool
+  - GetInt(section: const string&, key: const string&)$ : int
+  
+  %% Public Methods
+  + IsPrintAPP()$ : bool
+  + GetPrintAPPFormat()$ : int
+  + IsPrintCOM()$ : bool
+  + IsPrintDQT()$ : bool
+  + IsPrintSOF()$ : bool
+  + IsPrintDHT()$ : bool
+  + IsPrintDRI()$ : bool
+  + IsPrintSOS()$ : bool
+  + IsPrintRAW()$ : bool
+}

@@ -84,7 +84,7 @@ int CAppImageJpeg::ParseMarker()
     }
 
     if (m_pData[pos] != BYTE_MARKER_PREFIX) {
-      cout << "Unexpected Format! Data Fragment Happened." << endl << endl;
+      cout << "Unexpected Format! Data Fragment Happened." << '\n' << '\n';
       bError = true;
       break;
     }
@@ -152,7 +152,7 @@ int CAppImageJpeg::MoveParsePosToScanEnd(uint64_t &pos)
 
   stringstream ss;
 
-  ss << GetFileName() << endl;
+  ss << GetFileName() << '\n';
 
   while (!bError && !bFound) {
     if (!IsParsePosValid(pos)) {
@@ -344,6 +344,7 @@ int CAppImageJpeg::PrintBreakLine(uint8_t markerCode) const
 {
   switch (markerCode) {
     case 0xD8: {
+      // SOI
       cout << endl;
     } break;
 
@@ -355,10 +356,12 @@ int CAppImageJpeg::PrintBreakLine(uint8_t markerCode) const
     case 0xD5:
     case 0xD6:
     case 0xD7: {
+      // RST0 ~ RST7
       cout << endl;
     } break;
 
     case 0xD9: {
+      // EOI
       cout << endl << endl;
     } break;
   }
@@ -399,16 +402,11 @@ int CAppImageJpeg::ParseMarkerSegment(uint8_t markerCode, uint64_t &pos)
 
   PrintMarkerLen(len);
 
-  for (int i = 0; i < SUPPORTED_MARKER_NUMBER; i++) {
+  for (int i = 0; i < SUPPORTED_MARKER_SEGMENT_NUMBER; i++) {
     if (markerCode == m_FuncTable[i].marker) {
 
-      // APPn (Print)
-      if (markerCode >= APP0 && markerCode <= APP15) {
-        PrintAPPMarker(markerCode);
-      }
-
       // Call Marker Parase Process
-      (this->*(m_FuncTable[i].pFunc))(m_pData.get() + pos, len);
+      (this->*(m_FuncTable[i].pFunc))(markerCode, m_pData.get() + pos, len);
       break;
     }
   }
@@ -420,6 +418,7 @@ int CAppImageJpeg::ParseMarkerSegment(uint8_t markerCode, uint64_t &pos)
 
 int CAppImageJpeg::ObtainImageData(uint64_t &pos)
 {
+  // TODO: analyze requirements and make specifications
   return (RET_OK);
 }
 
@@ -443,10 +442,6 @@ int CAppImageJpeg::ClearMemoryEx()
   return (RET_OK);
 }
 
-int CAppImageJpeg::IncrPtrToMarker(byte *pData)
-{
-  return (RET_OK);
-}
 
 ///
 /// Parameters
@@ -481,6 +476,7 @@ int CAppImageJpeg::DumpPtrFile(const uint8_t *ptr, const uint64_t nByte,
   return (RET_OK);
 }
 
+#pragma region I/O Helper
 ///
 /// Parameters
 ///
@@ -519,9 +515,9 @@ int CAppImageJpeg::WriteFileCOM(const std::stringstream &ss)
   return (RET_ERR);
 }
 
-int CAppImageJpeg::WriteFileDHT(const std::stringstream &ss)
+int CAppImageJpeg::WriteFileDQT(const std::stringstream &ss)
 {
-  if (WriteOutputStream(m_ofs_dht, ss) == RET_OK) {
+  if (WriteOutputStream(m_ofs_dqt, ss) == RET_OK) {
     return (RET_OK);
   }
 
@@ -537,9 +533,9 @@ int CAppImageJpeg::WriteFileDRI(const std::stringstream &ss)
   return (RET_ERR);
 }
 
-int CAppImageJpeg::WriteFileDQT(const std::stringstream &ss)
+int CAppImageJpeg::WriteFileDHT(const std::stringstream &ss)
 {
-  if (WriteOutputStream(m_ofs_dqt, ss) == RET_OK) {
+  if (WriteOutputStream(m_ofs_dht, ss) == RET_OK) {
     return (RET_OK);
   }
 
@@ -572,92 +568,363 @@ int CAppImageJpeg::WriteFileRAW(const std::stringstream &ss)
 
   return (RET_ERR);
 }
+#pragma endregion
 
-int CAppImageJpeg::ParseSOI(const uint8_t *pData, const uint16_t nLength)
+#pragma region APP Parser
+int CAppImageJpeg::ParseAPPn(const uint8_t marker, const uint8_t *pData,
+                             const uint16_t nLength)
 {
+  if (marker >= APP0 && marker <= APP15) {
+    PrintAPP(marker, pData, nLength);
+  }
+
   return (RET_OK);
 }
 
-int CAppImageJpeg::ParseEOI(const uint8_t *pData, const uint16_t nLength)
+int CAppImageJpeg::PrintAPP(const uint8_t marker, const uint8_t *pData,
+                            const uint16_t nLength)
 {
-  return (RET_OK);
-}
+  if (marker < APP0 || marker > APP15) {
+    return (RET_ERR);
+  }
 
-int CAppImageJpeg::ParseAPPn(const uint8_t *pData, const uint16_t nLength)
-{
-  // TODO: redesign
-  stringstream ss;
-  stringstream ss_ascii;
+  if (!CAppData::IsPrintAPP()) {
+    return (RET_OK);
+  }
+
+  if (CAppData::GetPrintAPPFormat() == RET_ERR) {
+    return (RET_ERR);
+  }
+
+  {
+    // Output summary in one line
+    stringstream ss;
+    ss << GetFileName() << ", ";
+    ss << to_string(nLength) << ", ";
+
+    uint8_t diff = marker - APP0;
+    string str = "APP" + to_string(diff);
+    ss << str << endl;
+    WriteFileAPPn(ss);
+  }
 
   // Set format flags (std::ios_base::fmtflags)
-  ss << hex << uppercase << setfill('0');
-  ss_ascii << setfill('.');
+  switch (CAppData::GetPrintAPPFormat()) {
+    case PRINT_APP_FORMAT_HEX: {
+      PrintAPPFormatHex(pData, nLength);
+    } break;
+
+    case PRINT_APP_FORMAT_ASCII: {
+      PrintAPPFormatAscii(pData, nLength);
+    } break;
+
+    case PRINT_APP_FORMAT_BOTH: {
+      PrintAPPFormatBoth(pData, nLength);
+    } break;
+
+    case PRINT_APP_FORMAT_HEXDUMP: {
+      PrintAPPFormatHexdump(pData, nLength);
+    } break;
+  }
+
+  return (RET_OK);
+}
+
+int CAppImageJpeg::PrintAPPFormatHex(const uint8_t *pData,
+                                     const uint16_t nLength)
+{
+  stringstream ss_hex;
+  ss_hex << hex << uppercase << setfill('0');
 
   for (uint16_t nPos = 0; nPos < nLength; nPos++) {
 
-    ss << setw(2) << (int)pData[nPos] << " ";
-
-    if (IsPrintable(pData[nPos])) {
-
-      if (pData[nPos] == ' ') {
-        ss_ascii << setw(2) << "" << " ";
-      }
-      else {
-        ss_ascii << setw(2) << pData[nPos] << " ";
-      }
-    }
-    else {
-      ss_ascii << setw(2) << "" << " ";
-    }
+    ss_hex << setw(2) << (int)pData[nPos];
 
     if (nPos % DUMP_MAX_LINE_LENGTH == (DUMP_MAX_LINE_LENGTH - 1)) {
-      ss << endl;
-      ss_ascii << endl;
+      ss_hex << '\n';
+    }
+    else if ((nPos + 1) != nLength) {
+      ss_hex << ' ';
     }
   }
 
   if (nLength % DUMP_MAX_LINE_LENGTH != 0) {
-    ss << endl << endl;
-    ss_ascii << endl << endl;
+    ss_hex << '\n';
   }
 
-  if (CAppData::IsPrintAPP()) {
-    WriteFileAPPn(ss_ascii);
-    // WriteFileAPPn(ss);
-  }
+  ss_hex << '\n';
+  WriteFileAPPn(ss_hex);
 
   return (RET_OK);
 }
 
-int CAppImageJpeg::PrintAPPMarker(const uint8_t marker)
+int CAppImageJpeg::PrintAPPFormatAscii(const uint8_t *pData,
+                                       const uint16_t nLength)
 {
-  if (marker < APP0 || marker > APP15) {
+  stringstream ss_ascii;
+  ss_ascii << setfill('.');
+
+  for (uint16_t nPos = 0; nPos < nLength; nPos++) {
+
+    if (IsPrintable(pData[nPos])) {
+      ss_ascii << setw(2) << pData[nPos];
+    }
+    else {
+      ss_ascii << setw(2) << "";
+    }
+
+    if (nPos % DUMP_MAX_LINE_LENGTH == (DUMP_MAX_LINE_LENGTH - 1)) {
+      ss_ascii << '\n';
+    }
+    else if ((nPos + 1) != nLength) {
+      ss_ascii << ' ';
+    }
+  }
+
+  if (nLength % DUMP_MAX_LINE_LENGTH != 0) {
+    ss_ascii << '\n';
+  }
+
+  ss_ascii << '\n';
+  WriteFileAPPn(ss_ascii);
+
+  return (RET_OK);
+}
+
+int CAppImageJpeg::PrintAPPFormatBoth(const uint8_t *pData,
+                                      const uint16_t nLength)
+{
+  stringstream ss_hex_line;
+  stringstream ss_ascii_line;
+
+  ss_hex_line << hex << uppercase << setfill('0');
+  ss_ascii_line << setfill('.');
+
+  for (uint16_t nPos = 0; nPos < nLength; nPos++) {
+
+    // For hex
+    ss_hex_line << setw(2) << (int)pData[nPos];
+
+    // For ASCII
+    if (IsPrintable(pData[nPos])) {
+      ss_ascii_line << setw(2) << pData[nPos];
+    }
+    else {
+      ss_ascii_line << setw(2) << "";
+    }
+
+    if (nPos % DUMP_MAX_LINE_LENGTH == (DUMP_MAX_LINE_LENGTH - 1)) {
+      ss_hex_line << '\n';
+      ss_ascii_line << '\n';
+      WriteFileAPPn(ss_hex_line);
+      WriteFileAPPn(ss_ascii_line);
+      ss_hex_line.str("");
+      ss_ascii_line.str("");
+    }
+    else if ((nPos + 1) != nLength) {
+      ss_hex_line << ' ';
+      ss_ascii_line << ' ';
+    }
+  }
+
+  if (nLength % DUMP_MAX_LINE_LENGTH != 0) {
+    ss_hex_line << '\n';
+    ss_ascii_line << '\n';
+  }
+
+  ss_ascii_line << '\n';
+
+  WriteFileAPPn(ss_hex_line);
+  WriteFileAPPn(ss_ascii_line);
+
+  return (RET_OK);
+}
+
+int CAppImageJpeg::PrintAPPFormatHexdump(const uint8_t *pData,
+                                         const uint16_t nLength)
+{
+  // TODO: 
+  return (RET_OK);
+}
+#pragma endregion
+
+#pragma region COM Parser
+int CAppImageJpeg::ParseCOM(const uint8_t marker, const uint8_t *pData,
+                            const uint16_t nLength)
+{
+  return (RET_OK);
+}
+#pragma endregion
+
+#pragma region DQT Parser
+int CAppImageJpeg::ParseDQT(const uint8_t marker, const uint8_t *pData,
+                            const uint16_t nLength)
+{
+  uint64_t pos = 0x00;
+
+  MoveParseMarkerOffset(pos);
+
+  // One DQT segment may contain multiple quantization tables.
+  while (pos < nLength) {
+
+    if (m_count_dqt_table >= DQT_MAX_TABLE_COUNT) {
+      // TODO: test & design
+      return (RET_ERR);
+    }
+
+    _QUANTIZATION_TABLE *pDqt = &m_dqt[m_count_dqt_table];
+
+    pDqt->pq = (pData[pos] >> 4);
+    pDqt->tq = (pData[pos] & 0x0F);
+    pDqt->qk.assign(64, 0);
+
+    pos += 1;
+
+    if (pDqt->pq == DQT_PQ_08_BITS) {
+      for (int i = 0; i < DQT_QK_MAX_COUNT; i++) {
+        pDqt->qk[i] = pData[pos + i];
+      }
+      pos += DQT_QK_MAX_COUNT;
+    }
+    else if (pDqt->pq == DQT_PQ_16_BITS) {
+      for (int i = 0; i < DQT_QK_MAX_COUNT; i++) {
+        pDqt->qk[i] = (pData[pos + i + 1] << 8) + pData[pos + i];
+        i++;
+      }
+      pos += DQT_QK_MAX_COUNT * 2;
+    }
+
+    PrintQuantizationTable(m_count_dqt_table);
+    m_count_dqt_table++;
+  }
+  return (RET_OK);
+}
+
+int CAppImageJpeg::PrintQuantizationTable(const uint8_t q)
+{
+  stringstream ss;
+
+  if (q < 0 || q >= DQT_MAX_TABLE_COUNT) {
     // TODO: test
     return (RET_ERR);
   }
 
-  if (CAppData::IsPrintAPP() == false) {
+  const _QUANTIZATION_TABLE *pTable = &m_dqt[q];
+
+  if (pTable->qk.size() != DQT_QK_MAX_COUNT) {
+    // TODO: test
     return (RET_ERR);
   }
 
-  stringstream ss;
   ss << GetFileName() << ", ";
+  ss << "Pq: " << (int)pTable->pq << ", ";
+  ss << "Tq: " << (int)pTable->tq << endl;
+  ss << dec << setfill(' ') << nouppercase;
 
-  uint8_t diff = marker - APP0;
+  if (pTable->pq == DQT_PQ_08_BITS) {
+    for (int i = 0; i < DQT_QK_MAX_COUNT; i++) {
+      ss << setw(3) << (int)pTable->qk[zigzag_order[i]];
+      if (i % MCU_COUNT == (MCU_COUNT - 1)) {
+        ss << endl;
+      }
+      else {
+        ss << " ";
+      }
+    }
+  }
+  else if (pTable->pq == DQT_PQ_16_BITS) {
+    for (int i = 0; i < DQT_QK_MAX_COUNT; i++) {
+      ss << setw(5) << (int)pTable->qk[zigzag_order[i]] << " ";
+      if (i % MCU_COUNT == (MCU_COUNT - 1)) {
+        ss << endl;
+      }
+      else {
+        ss << " ";
+      }
+    }
+  }
 
-  string str = "APP" + to_string(diff);
-  ss << str << endl;
-
-  WriteFileAPPn(ss);
+  ss << endl;
+  WriteFileDQT(ss);
 
   return (RET_OK);
 }
 
-int CAppImageJpeg::PrintAPP()
+#pragma endregion
+
+#pragma region DRI Parser
+int CAppImageJpeg::ParseDRI(const uint8_t marker, const uint8_t *pData,
+                            const uint16_t nLength)
 {
+  if (marker != DRI) {
+    return (RET_ERR);
+  }
+
+  if (nLength != 4) {
+    return (RET_ERR);
+  }
+
+  uint64_t pos = 0;
+  MoveParseMarkerOffset(pos);
+  m_dri.ri = (pData[pos] << 8) | pData[pos + 1];
+
+  stringstream ss;
+  ss << GetFileName() << '\n';
+  ss << "dri = " << (int)(m_dri.ri) << '\n' << '\n';
+  WriteFileDRI(ss);
+
   return (RET_OK);
 }
+#pragma endregion
 
+#pragma region SOF Parser
+int CAppImageJpeg::ParseSOF0(const uint8_t marker, const uint8_t *pData,
+                             const uint16_t nLength)
+{
+  if (nLength < 8) {
+    return (RET_ERR);
+  }
+  m_sof.seg.marker = SOF0;
+  m_sof.seg.length = (pData[0] << 8) | pData[1];
+  m_sof.p = pData[2];
+  m_sof.height = (pData[3] << 8) | pData[4];
+  m_sof.width = (pData[5] << 8) | pData[6];
+  m_sof.num = pData[7];
+
+  if ((nLength - 8) % 3 != 0) {
+    return (RET_ERR);
+  }
+
+  for (int n = 0; n < m_sof.num; n++) {
+
+    _SOF_PART part;
+
+    part.index = pData[8 + 3 * n];
+    part.h_rate = pData[8 + 3 * n + 1] >> 4;
+    part.v_rate = pData[8 + 3 * n + 1] & 0x0F;
+    part.dqt_no = pData[8 + 3 * n + 2];
+
+    m_sof.v.push_back(part);
+  }
+
+  if (CAppData::IsPrintSOF()) {
+    PrintSOF();
+  }
+
+  return (RET_OK);
+}
+int CAppImageJpeg::ParseSOF2(const uint8_t marker, const uint8_t *pData,
+                             const uint16_t nLength)
+{
+  // TODO
+  return (RET_OK);
+}
+int CAppImageJpeg::ParseSOF3(const uint8_t marker, const uint8_t *pData,
+                             const uint16_t nLength)
+{
+  // TODO
+  return (RET_OK);
+}
 int CAppImageJpeg::PrintSOF()
 {
   if (CAppData::IsPrintSOF() == false) {
@@ -689,48 +956,18 @@ int CAppImageJpeg::PrintSOF()
 
   return (RET_OK);
 }
+#pragma endregion
 
-int CAppImageJpeg::PrintSOS()
-{
-  if (m_sos.cs.size() != m_sos.ns) {
-    return (RET_ERR);
-  }
-
-  stringstream ss;
-
-  ss << GetFileName() << ", SOS, ";
-  ss << "marker len : " << (int)m_sos.seg.length << endl;
-
-  ss << "The number of components: " << (int)m_sos.ns << endl;
-
-  for (int i = 0; i < m_sos.ns; i++) {
-    ss << "-----------------------------------" << endl;
-    ss << "cs: " << (int)m_sos.cs[i].id << endl;
-    ss << "huffman table id (DC): " << (int)m_sos.cs[i].td << endl;
-    ss << "huffman table id (AC): " << (int)m_sos.cs[i].ta << endl;
-  }
-
-  ss << "-----------------------------------" << endl;
-  ss << "Start of spectral selection: " << (int)m_sos.ss << endl;
-  ss << "End of spectral selection: " << (int)m_sos.se << endl;
-
-  ss << "Approximation bit high: " << (int)m_sos.ah << endl;
-  ss << "Approximation bit low: " << (int)m_sos.al << endl;
-  ss << endl;
-
-  WriteFileSOS(ss);
-
-  return (RET_OK);
-}
-
-int CAppImageJpeg::ParseDHT(const uint8_t *pData, const uint16_t nLength)
+#pragma region DHT Parser
+int CAppImageJpeg::ParseDHT(const uint8_t marker, const uint8_t *pData,
+                            const uint16_t nLength)
 {
   uint64_t pos = 0;
 
   MoveParseMarkerOffset(pos);
 
   stringstream ss;
-  ss << GetFileName() << endl;
+  ss << GetFileName() << '\n';
 
   while (pos < nLength) {
     _DHT dht;
@@ -760,22 +997,9 @@ int CAppImageJpeg::ParseDHT(const uint8_t *pData, const uint16_t nLength)
     PrintHuffmanTree(dht.tc, dht.th, ss);
   }
 
-  ss << endl;
+  ss << '\n';
 
   WriteFileDHT(ss);
-
-  return (RET_OK);
-}
-
-int CAppImageJpeg::ValidateTcTh(const uint8_t tc, const uint8_t th) const
-{
-  if (tc != 0 && tc != 1) {
-    return (RET_ERR);
-  }
-
-  if (th != 0 && th != 1 && th != 2 && th != 3) {
-    return (RET_ERR);
-  }
 
   return (RET_OK);
 }
@@ -887,150 +1111,30 @@ int CAppImageJpeg::PrintHuffmanTree(const uint8_t tc, const uint8_t th,
     // Ouput code in binary with specified length
     os << " : ";
     os << std::vformat(format, std::make_format_args(hcode.code));
-    os << endl;
+    os << '\n';
   }
 
   return (RET_OK);
 }
 
-int CAppImageJpeg::PrintQuantizationTable(const uint8_t q)
+int CAppImageJpeg::ValidateTcTh(const uint8_t tc, const uint8_t th) const
 {
-  stringstream ss;
-
-  if (q < 0 || q >= DQT_MAX_TABLE_COUNT) {
-    // TODO: test
+  if (tc != 0 && tc != 1) {
     return (RET_ERR);
   }
 
-  const _QUANTIZATION_TABLE *pTable = &m_dqt[q];
-
-  if (pTable->qk.size() != DQT_QK_MAX_COUNT) {
-    // TODO: test
+  if (th != 0 && th != 1 && th != 2 && th != 3) {
     return (RET_ERR);
   }
 
-  ss << GetFileName() << ", ";
-  ss << "Pq: " << (int)pTable->pq << ", ";
-  ss << "Tq: " << (int)pTable->tq << endl;
-  ss << dec << setfill(' ') << nouppercase;
-
-  if (pTable->pq == DQT_PQ_08_BITS) {
-    for (int i = 0; i < DQT_QK_MAX_COUNT; i++) {
-      ss << setw(3) << (int)pTable->qk[zigzag_order[i]];
-      if (i % MCU_COUNT == (MCU_COUNT - 1)) {
-        ss << endl;
-      }
-      else {
-        ss << " ";
-      }
-    }
-  }
-  else if (pTable->pq == DQT_PQ_16_BITS) {
-    for (int i = 0; i < DQT_QK_MAX_COUNT; i++) {
-      ss << setw(5) << (int)pTable->qk[zigzag_order[i]] << " ";
-      if (i % MCU_COUNT == (MCU_COUNT - 1)) {
-        ss << endl;
-      }
-      else {
-        ss << " ";
-      }
-    }
-  }
-
-  ss << endl;
-  WriteFileDQT(ss);
-
   return (RET_OK);
 }
 
-int CAppImageJpeg::ParseSOF0(const uint8_t *pData, const uint16_t nLength)
-{
-  if (nLength < 8) {
-    return (RET_ERR);
-  }
-  m_sof.seg.marker = SOF0;
-  m_sof.seg.length = (pData[0] << 8) | pData[1];
-  m_sof.p = pData[2];
-  m_sof.height = (pData[3] << 8) | pData[4];
-  m_sof.width = (pData[5] << 8) | pData[6];
-  m_sof.num = pData[7];
+#pragma endregion
 
-  if ((nLength - 8) % 3 != 0) {
-    return (RET_ERR);
-  }
-
-  for (int n = 0; n < m_sof.num; n++) {
-
-    _SOF_PART part;
-
-    part.index = pData[8 + 3 * n];
-    part.h_rate = pData[8 + 3 * n + 1] >> 4;
-    part.v_rate = pData[8 + 3 * n + 1] & 0x0F;
-    part.dqt_no = pData[8 + 3 * n + 2];
-
-    m_sof.v.push_back(part);
-  }
-
-  if (CAppData::IsPrintSOF()) {
-    PrintSOF();
-  }
-
-  return (RET_OK);
-}
-
-int CAppImageJpeg::ParseSOF2(const uint8_t *pData, const uint16_t nLength)
-{
-  return (RET_OK);
-}
-
-int CAppImageJpeg::ParseSOF3(const uint8_t *pData, const uint16_t nLength)
-{
-  return (RET_OK);
-}
-
-int CAppImageJpeg::ParseDQT(const uint8_t *pData, const uint16_t nLength)
-{
-  uint64_t pos = 0x00;
-
-  MoveParseMarkerOffset(pos);
-
-  // One DQT segment may contain multiple quantization tables.
-  while (pos < nLength) {
-
-    if (m_count_dqt_table >= DQT_MAX_TABLE_COUNT) {
-      // TODO: test & design
-      return (RET_ERR);
-    }
-
-    _QUANTIZATION_TABLE *pDqt = &m_dqt[m_count_dqt_table];
-
-    pDqt->pq = (pData[pos] >> 4);
-    pDqt->tq = (pData[pos] & 0x0F);
-    pDqt->qk.assign(64, 0);
-
-    pos += 1;
-
-    if (pDqt->pq == DQT_PQ_08_BITS) {
-      for (int i = 0; i < DQT_QK_MAX_COUNT; i++) {
-        pDqt->qk[i] = pData[pos + i];
-      }
-      pos += DQT_QK_MAX_COUNT;
-    }
-    else if (pDqt->pq == DQT_PQ_16_BITS) {
-      for (int i = 0; i < DQT_QK_MAX_COUNT; i++) {
-        pDqt->qk[i] = (pData[pos + i + 1] << 8) + pData[pos + i];
-        i++;
-      }
-      pos += DQT_QK_MAX_COUNT * 2;
-    }
-
-    PrintQuantizationTable(m_count_dqt_table);
-    m_count_dqt_table++;
-  }
-  return (RET_OK);
-}
-
-int CAppImageJpeg::ParseSOS(const uint8_t *pData, const uint16_t nLength)
+#pragma region SOS Parser
+int CAppImageJpeg::ParseSOS(const uint8_t marker, const uint8_t *pData,
+                            const uint16_t nLength)
 {
   if (nLength % 2 != 0) {
     // TODO: test
@@ -1067,25 +1171,42 @@ int CAppImageJpeg::ParseSOS(const uint8_t *pData, const uint16_t nLength)
 
   return (RET_OK);
 }
-
-int CAppImageJpeg::ParseCOM(const uint8_t *pData, const uint16_t nLength)
+int CAppImageJpeg::PrintSOS()
 {
+  if (m_sos.cs.size() != m_sos.ns) {
+    return (RET_ERR);
+  }
+
+  stringstream ss;
+
+  ss << GetFileName() << ", SOS, ";
+  ss << "marker len : " << (int)m_sos.seg.length << endl;
+
+  ss << "The number of components: " << (int)m_sos.ns << endl;
+
+  for (int i = 0; i < m_sos.ns; i++) {
+    ss << "-----------------------------------" << endl;
+    ss << "cs: " << (int)m_sos.cs[i].id << endl;
+    ss << "huffman table id (DC): " << (int)m_sos.cs[i].td << endl;
+    ss << "huffman table id (AC): " << (int)m_sos.cs[i].ta << endl;
+  }
+
+  ss << "-----------------------------------" << endl;
+  ss << "Start of spectral selection: " << (int)m_sos.ss << endl;
+  ss << "End of spectral selection: " << (int)m_sos.se << endl;
+
+  ss << "Approximation bit high: " << (int)m_sos.ah << endl;
+  ss << "Approximation bit low: " << (int)m_sos.al << endl;
+  ss << endl;
+
+  WriteFileSOS(ss);
+
   return (RET_OK);
 }
+#pragma endregion
 
 int CAppImageJpeg::ParseCompressedData(const uint8_t *pData, uint64_t &pos)
 {
   // TODO
-
-  return (RET_OK);
-}
-
-int CAppImageJpeg::ParseRSTn(const uint8_t *pData, const uint16_t nLength)
-{
-  return (RET_OK);
-}
-
-int CAppImageJpeg::ParseDRI(const uint8_t *pData, const uint16_t nLength)
-{
   return (RET_OK);
 }

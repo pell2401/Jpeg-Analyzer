@@ -19,33 +19,32 @@ public:
   CAppImageJpeg();
   virtual ~CAppImageJpeg();
 
+  // Public API for parsing JPEG
   int ParseMarker();
 
+  // TODO: Clean up the design and redesign
   int MoveParseMarkerOffset(uint64_t &pos) const;
   int MoveParsePosToScanEnd(uint64_t &pos);
   bool IsParsePosValid(const uint64_t pos) const;
-
   uint8_t GetNextExpectRst(uint8_t markerCode) const;
-
   int PrintMarkerPos(uint8_t markerCode, uint64_t pos) const;
   int PrintBreakLine(uint8_t markerCode) const;
   int PrintMarkerLen(uint16_t markerLen) const;
-
   bool HasMarkerSegment(uint8_t markerCode) const;
   int ParseMarkerSegment(uint8_t markerCode, uint64_t &pos);
   int ObtainImageData(uint64_t &pos);
 
 protected:
+  // Override
   int ClearMemoryEx() override;
 
+  // Private Methods
 private:
-  int IncrPtrToMarker(byte *pData);
-
   int DumpPtrFile(const uint8_t *ptr, const uint64_t nByte,
                   const uint64_t nOffset, std::ostream &os);
 
+#pragma region I/O Helper
   int WriteOutputStream(std::ofstream &ofs, const std::stringstream &ss) const;
-
   int WriteFileAPPn(const std::stringstream &ss);
   int WriteFileCOM(const std::stringstream &ss);
   int WriteFileDQT(const std::stringstream &ss);
@@ -54,60 +53,86 @@ private:
   int WriteFileDHT(const std::stringstream &ss);
   int WriteFileSOS(const std::stringstream &ss);
   int WriteFileRAW(const std::stringstream &ss);
+#pragma endregion
 
 private:
-  int ParseSOI(const uint8_t *pData, const uint16_t nLength);
-  int ParseAPPn(const uint8_t *pData, const uint16_t nLength);
-  int ParseCOM(const uint8_t *pData, const uint16_t nLength);
-  int ParseDQT(const uint8_t *pData, const uint16_t nLength);
-  int ParseSOF0(const uint8_t *pData, const uint16_t nLength);
-  int ParseSOF2(const uint8_t *pData, const uint16_t nLength);
-  int ParseSOF3(const uint8_t *pData, const uint16_t nLength);
-  int ParseDHT(const uint8_t *pData, const uint16_t nLength);
-  int ParseDRI(const uint8_t *pData, const uint16_t nLength);
-  int ParseSOS(const uint8_t *pData, const uint16_t nLength);
-  int ParseRSTn(const uint8_t *pData, const uint16_t nLength);
-  int ParseEOI(const uint8_t *pData, const uint16_t nLength);
+#pragma region TODO
+  int ParseCOM(const uint8_t marker, const uint8_t *pData,
+               const uint16_t nLength);
+  int ParseDRI(const uint8_t marker, const uint8_t *pData,
+               const uint16_t nLength);
+  int ParseSOF2(const uint8_t marker, const uint8_t *pData,
+                const uint16_t nLength);
+  int ParseSOF3(const uint8_t marker, const uint8_t *pData,
+                const uint16_t nLength);
+  int ParseCompressedData(const uint8_t *pData, uint64_t &pos);
+#pragma endregion
 
-  int ValidateTcTh(const uint8_t tc, const uint8_t th) const;
+#pragma region APP Parser
+  int ParseAPPn(const uint8_t marker, const uint8_t *pData,
+                const uint16_t nLength);
+  int PrintAPP(const uint8_t marker, const uint8_t *pData,
+               const uint16_t nLength);
+  int PrintAPPFormatHex(const uint8_t *pData, const uint16_t nLength);
+  int PrintAPPFormatAscii(const uint8_t *pData, const uint16_t nLength);
+  int PrintAPPFormatBoth(const uint8_t *pData, const uint16_t nLength);
+  int PrintAPPFormatHexdump(const uint8_t *pData, const uint16_t nLength);
+#pragma endregion
+
+#pragma region DQT Parser
+  int ParseDQT(const uint8_t marker, const uint8_t *pData,
+               const uint16_t nLength);
+  int PrintQuantizationTable(const uint8_t q);
+#pragma endregion
+
+#pragma region DHT Parser
+  int ParseDHT(const uint8_t marker, const uint8_t *pData,
+               const uint16_t nLength);
   int MakeHuffmanTree(const uint8_t tc, const uint8_t th, const uint8_t l[16],
                       const vector<uint8_t> &v);
-
-  // APP
-  int PrintAPPMarker(const uint8_t marker);
-  int PrintAPP();
-  // DQT
-  int PrintQuantizationTable(const uint8_t q);
-  // DHT
   int PrintHuffmanTree(const uint8_t tc, const uint8_t th,
                        std::ostream &ss) const;
-  // SOF
-  int PrintSOF();
-  // SOS
-  int PrintSOS();
+  int ValidateTcTh(const uint8_t tc, const uint8_t th) const;
+#pragma endregion
 
-  int ParseCompressedData(const uint8_t *pData, uint64_t &pos);
+#pragma region SOF Parser
+  int ParseSOF0(const uint8_t marker, const uint8_t *pData,
+                const uint16_t nLength);
+  int PrintSOF();
+#pragma endregion
+
+#pragma region SOS Parser
+  int ParseSOS(const uint8_t marker, const uint8_t *pData,
+               const uint16_t nLength);
+  int PrintSOS();
+#pragma endregion
 
 private:
-  _MARKER_HANDLER m_FuncTable[SUPPORTED_MARKER_NUMBER] = {
+  _MARKER_HANDLER m_FuncTable[SUPPORTED_MARKER_SEGMENT_NUMBER] = {
 
-      {SOI, &CAppImageJpeg::ParseSOI},    {EOI, &CAppImageJpeg::ParseEOI},
-
-      {APP0, &CAppImageJpeg::ParseAPPn},  {APP1, &CAppImageJpeg::ParseAPPn},
-      {APP2, &CAppImageJpeg::ParseAPPn},  {APP3, &CAppImageJpeg::ParseAPPn},
-      {APP4, &CAppImageJpeg::ParseAPPn},  {APP5, &CAppImageJpeg::ParseAPPn},
-      {APP6, &CAppImageJpeg::ParseAPPn},  {APP7, &CAppImageJpeg::ParseAPPn},
-      {APP8, &CAppImageJpeg::ParseAPPn},  {APP9, &CAppImageJpeg::ParseAPPn},
-      {APP10, &CAppImageJpeg::ParseAPPn}, {APP11, &CAppImageJpeg::ParseAPPn},
-      {APP12, &CAppImageJpeg::ParseAPPn}, {APP13, &CAppImageJpeg::ParseAPPn},
-      {APP14, &CAppImageJpeg::ParseAPPn}, {APP15, &CAppImageJpeg::ParseAPPn},
-
-      {DHT, &CAppImageJpeg::ParseDHT},    {DQT, &CAppImageJpeg::ParseDQT},
-
-      {SOF0, &CAppImageJpeg::ParseSOF0},  {SOF2, &CAppImageJpeg::ParseSOF2},
-      {SOF3, &CAppImageJpeg::ParseSOF3},
-
-      {SOS, &CAppImageJpeg::ParseSOS},    {DRI, &CAppImageJpeg::ParseDRI},
+      {APP0, &CAppImageJpeg::ParseAPPn},
+      {APP1, &CAppImageJpeg::ParseAPPn},
+      {APP2, &CAppImageJpeg::ParseAPPn},
+      {APP3, &CAppImageJpeg::ParseAPPn},
+      {APP4, &CAppImageJpeg::ParseAPPn},
+      {APP5, &CAppImageJpeg::ParseAPPn},
+      {APP6, &CAppImageJpeg::ParseAPPn},
+      {APP7, &CAppImageJpeg::ParseAPPn},
+      {APP8, &CAppImageJpeg::ParseAPPn},
+      {APP9, &CAppImageJpeg::ParseAPPn},
+      {APP10, &CAppImageJpeg::ParseAPPn},
+      {APP11, &CAppImageJpeg::ParseAPPn},
+      {APP12, &CAppImageJpeg::ParseAPPn},
+      {APP13, &CAppImageJpeg::ParseAPPn},
+      {APP14, &CAppImageJpeg::ParseAPPn},
+      {APP15, &CAppImageJpeg::ParseAPPn},
+      {DHT, &CAppImageJpeg::ParseDHT},
+      {DQT, &CAppImageJpeg::ParseDQT},
+      {SOF0, &CAppImageJpeg::ParseSOF0},
+      //{SOF2, &CAppImageJpeg::ParseSOF2},
+      //{SOF3, &CAppImageJpeg::ParseSOF3},
+      {SOS, &CAppImageJpeg::ParseSOS},
+      {DRI, &CAppImageJpeg::ParseDRI},
       {COM, &CAppImageJpeg::ParseCOM},
   };
 
@@ -132,6 +157,7 @@ private:
   uint8_t m_count_dqt_table;
   _SOF m_sof;
   _SOS m_sos;
+  _DRI m_dri;
 
   // Output Stream
   std::ofstream m_ofs_app;

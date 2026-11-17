@@ -6,5 +6,4 @@
 // Forward-declaration is required
 class CAppImageJpeg;
 
-typedef int (CAppImageJpeg::*pFuncParseMarker)(const uint8_t *, const uint16_t);
-typedef int (CAppImageJpeg::*pFuncDumpPtrFile)(const std::stringstream&);
+typedef int (CAppImageJpeg::*pFuncParseMarker)(const uint8_t marker, const uint8_t *pData, const uint16_t nLength);

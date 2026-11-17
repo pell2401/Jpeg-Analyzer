@@ -1,0 +1,119 @@
+classDiagram
+
+class CAppImage {
+  <<abstract>>
+  # m_pData : unique_ptr~uint8_t[]~
+  - m_FileName : string
+  - m_nFileSize : uint64_t
+
+
+  %% Constructor & Destructor
+  + CAppImage()
+  + ~CAppImage()
+
+  + ReadFile(filePath: const string&) : int
+  + DumpFile() const : int
+  + DumpPtr(ptr: const uint8_t*, nByte: const uint64_t, nStartPos: const uint64_t = 0) const : int
+
+  + GetFileSize() const : const uint64_t
+  + GetFileName() const : const string
+  + GetData(pos: uint64_t) const : const uint8_t
+  + IsDataNull() const : const bool
+  + IsIndexValid(pos: uint64_t) const : const bool
+  + IsPrintable(c: uint8_t) const : const bool
+
+  %% Pure virtual method
+  # ClearMemoryEx()* : int
+
+  %% Private methods
+  - ClearMemory() : int
+  - SetFileSize(fileSize: uint64_t) : int
+  - SetFileName(fileName: string) : int
+}
+
+class CAppImageJpeg {
+  - m_MarkerMap : map~uint8_t, string~
+  - m_FuncTable : _MARKER_HANDLER[SUPPORTED_MARKER_SEGMENT_NUMBER]
+  - m_vt_BitData : vector~uint8_t~
+  - m_vt_dht : vt_DHT
+  - m_dqt : vt_DQT
+  - m_count_dqt_table : uint8_t
+  - m_sof : _SOF
+  - m_sos : _SOS
+  - m_dri : _DRI
+
+  %% Output Stream
+  - m_ofs_app : ofstream
+  - m_ofs_com : ofstream
+  - m_ofs_dqt : ofstream
+  - m_ofs_sof : ofstream
+  - m_ofs_dht : ofstream
+  - m_ofs_dri : ofstream
+  - m_ofs_sos : ofstream
+  - m_ofs_raw : ofstream 
+
+  %% Public Methods
+  + CAppImageJpeg()
+  + ~CAppImageJpeg()
+
+  %%  Public API for parsing JPEG
+  + ParseMarker() : int
+
+  %% TODO: Clean up the design and redesign
+  + MoveParseMarkerOffset(pos: uint64_t&) const : int
+  + MoveParsePosToScanEnd(pos: uint64_t&) : int
+  + IsParsePosValid(pos: const uint64_t) const : bool
+  + GetNextExpectRst(markerCode: uint8_t) const : uint8_t
+  + PrintMarkerPos(markerCode: uint8_t, pos: uint64_t) const : int
+  + PrintBreakLine(markerCode: uint8_t) const : int
+  + PrintMarkerLen(markerLen: uint16_t) const : int
+  + HasMarkerSegment(markerCode: uint8_t) const : bool
+  + ParseMarkerSegment(markerCode: uint8_t, pos: uint64_t&) : int
+  + ObtainImageData(pos: uint64_t&) : int
+
+  %% Override
+  # ClearMemoryEx() override : int
+
+  %% Private Methods
+  - DumpPtrFile(ptr: const uint8_t*, nByte: const uint64_t, nOffset: const uint64_t, os: ostream&) : int
+
+  %% I/O Helper
+  - WriteOutputStream(ofs: ofstream&, ss: const stringstream&) const : int
+  - WriteFileAPPn(ss: const stringstream&) : int
+  - WriteFileCOM(ss: const stringstream&) : int
+  - WriteFileDQT(ss: const stringstream&) : int
+  - WriteFileDRI(ss: const stringstream&) : int
+  - WriteFileSOF(ss: const stringstream&) : int
+  - WriteFileDHT(ss: const stringstream&) : int
+  - WriteFileSOS(ss: const stringstream&) : int
+  - WriteFileRAW(ss: const stringstream&) : int
+
+  %% APP Parser
+  - ParseAPPn(marker: const uint8_t, pData: const uint8_t*, nLength: const uint16_t) : int
+  - PrintAPP(marker: const uint8_t, pData: const uint8_t*, nLength: const uint16_t) : int
+  - PrintAPPFormatHex(pData: const uint8_t*, nLength: const uint16_t) : int
+  - PrintAPPFormatAscii(pData: const uint8_t*, nLength: const uint16_t) : int
+  - PrintAPPFormatBoth(pData: const uint8_t*, nLength: const uint16_t) : int
+  - PrintAPPFormatHexdump(pData: const uint8_t*, nLength: const uint16_t) : int
+
+  %% DQT Parser
+  - ParseDQT(marker: const uint8_t, pData: const uint8_t*, nLength: const uint16_t) : int
+  - PrintQuantizationTable(q: const uint8_t) : int
+
+  %% DHT Parser
+  - ParseDHT(marker: const uint8_t, pData: const uint8_t*, nLength: const uint16_t) : int
+  - MakeHuffmanTree(tc: const uint8_t, th: const uint8_t, l: const uint8_t[16], v: const vector~uint8_t~&) : int
+  - PrintHuffmanTree(tc: const uint8_t, th: const uint8_t, ss: ostream&) const : int
+  - ValidateTcTh(tc: const uint8_t, th: const uint8_t) const : int
+
+  %% SOF Parser
+  - ParseSOF0(marker: const uint8_t, pData: const uint8_t*, nLength: const uint16_t) : int
+  - PrintSOF() : int
+
+  %% SOS Parser
+  - ParseSOS(marker: const uint8_t, pData: const uint8_t*, nLength: const uint16_t) : int
+  - PrintSOS() : int
+}
+
+%% Generalization
+CAppImage <|-- CAppImageJpeg

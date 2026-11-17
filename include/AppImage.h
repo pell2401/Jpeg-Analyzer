@@ -2,6 +2,8 @@
 
 #include <iostream>
 #include <string>
+#include <cstdint>
+#include <memory>
 
 using namespace std;
 
@@ -12,10 +14,7 @@ public:
 
 public:
   int ReadFile(const string &filePath);
-
-public:
   int DumpFile() const;
-
   int DumpPtr(const uint8_t *ptr, const uint64_t nByte,
               const uint64_t nStartPos = 0) const;
 

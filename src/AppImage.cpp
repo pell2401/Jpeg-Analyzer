@@ -199,7 +199,7 @@ const bool CAppImage::IsIndexValid(uint64_t pos) const
 ///
 /// Return Values
 ///
-/// true    :   Printable
+/// true    :   Printable (including space(' '), excluding '\n', '\r', '\t')
 /// false   :   Not Printable
 ///
 const bool CAppImage::IsPrintable(uint8_t c) const
